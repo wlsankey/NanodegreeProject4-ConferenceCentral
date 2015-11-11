@@ -410,7 +410,8 @@ class ConferenceApi(remote.Service):
             websafeConferenceKey="",
             key=str(session_form_key)
             )
-        session_form.put()
+        #session_form.put()
+        #logging.warning(session_form)
 
         setattr(session_form,"name",data['name'])
         setattr(session_form, "duration", data['duration'])
@@ -420,28 +421,39 @@ class ConferenceApi(remote.Service):
         setattr(session_form, "websafeConferenceKey", data['websafeConferenceKey'])
         setattr(session_form, "key", str(data['key']))
         setattr(session_form, "date", data['date'])
-        session_form.put()
+        #session_form.put()
 
         #null_object = none
 
-        return_object = self._copySessionToForm(data)
+        #return_object = self._copySessionToForm(data)
+        Session(**session_form).put()
 
-
-        return return_object
+        return request
 
 
     def _copySessionToForm(self, data):
-        s_form = SessionForm()
-        s_form.name = data['name']
-        s_form.duration = data['duration']
-        s_form.typeOfsession = data['typeOfsession']
-        s_form.start_time = data['start_time']
-        s_form.websafeConferenceKey = data['websafeConferenceKey']
-        s_form.date = data['date']
-        s_form.key = str(data['key'])
-        s_form.highlights = data['highlights']
+        session_form = SessionForm()
 
-        return s_form
+        setattr(session_form,"name",data['name'])
+        setattr(session_form, "duration", data['duration'])
+        setattr(session_form, "typeOfsession", data['typeOfsession'])
+        setattr(session_form, "start_time", data['start_time'])
+        setattr(session_form, "highlights", data['highlights'])
+        setattr(session_form, "websafeConferenceKey", data['websafeConferenceKey'])
+        setattr(session_form, "key", str(data['key']))
+        setattr(session_form, "date", data['date'])
+
+        # s_form = SessionForm()
+        # s_form.name = data['name']
+        # s_form.duration = data['duration']
+        # s_form.typeOfsession = data['typeOfsession']
+        # s_form.start_time = data['start_time']
+        # s_form.websafeConferenceKey = data['websafeConferenceKey']
+        # s_form.date = data['date']
+        # s_form.key = str(data['key'])
+        # s_form.highlights = data['highlights']
+
+        return session_form
         
         
     
@@ -496,6 +508,50 @@ class ConferenceApi(remote.Service):
             )
 
         return output
+
+
+        # @endpoints.method(CONF_GET_REQUEST, SessionForms,
+        # path='getConferenceSessionsByType/{websafeConferenceKey}',
+        # http_method='GET',
+        # name= 'getConferenceSessions')
+        # def getConferenceSessionsByType(self, websafeConferenceKey, typeOfsession):
+        # """" A query to return all Sessions of a given Conference"""
+
+        # user= endpoints.get_current_user()
+        # if not user:
+        #     raise endpoints.UnauthorizedException('Authorization required')
+        # user_id = getUserId(user)
+
+        # # return ancestor (Conference) key
+        # conference_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        # # Check if there is a conference associated with conference key
+        # conf = conference_key.get()
+
+        # if not conf:
+        #     raise endpoints.NotFoundException(
+        #     'No conference found for the key provided: %s' % request.websafeConferenceKey
+        #     )
+        # logging.warning(conf)
+        # #logging.warning(conference_key)
+
+        # # create an ancestor query for all sessions of a conference
+        # sessions_query = Session.query(ancestor=conference_key)
+        # #sessions_query = Session.query(Session.websafeConferenceKey == request.websafeConferenceKey)
+        # #sessions = sessions_query.fetch()
+        # sessions = sessions_query
+        # logging.warning(sessions_query)
+        # logging.warning( "This is the websafeConferenceKey = {0}".format(request.websafeConferenceKey))
+        # logging.warning("The sessions are below:")
+        # for sess in sessions:
+        #     logging.warning("Name: {0} -- Sess Key: {1}".format(sess.name, sess.key))
+
+        # #logging.warning(Session.all())
+
+        # output = SessionForms(
+        #     items=[self._copySessionToForm(sess) for sess in sessions] 
+        #     )
+
+        # return output
 
 
 
