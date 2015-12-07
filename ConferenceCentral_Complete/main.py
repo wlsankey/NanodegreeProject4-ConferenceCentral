@@ -17,6 +17,18 @@ from google.appengine.api import app_identity
 from google.appengine.api import mail
 from conference import ConferenceApi
 
+import endpoints
+from protorpc import messages
+from protorpc import message_types
+from protorpc import remote
+
+from models import SessionForms
+from conference import CONF_GET_REQUEST
+from conference import getFeaturedSpeaker
+
+
+
+
 class SetAnnouncementHandler(webapp2.RequestHandler):
     def get(self):
         """Set Announcement in Memcache."""
@@ -37,8 +49,22 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
                 'conferenceInfo')
         )
 
+class GetFeaturedSpeaker(webapp2.RequestHandler):
+    def get(self):
+        ConferenceApi.getFeaturedSpeaker(
+            self.request.get('webSafeConferenceKey')
+            )
+        
+       
+
+
+
+
+
+
 
 app = webapp2.WSGIApplication([
     ('/crons/set_announcement', SetAnnouncementHandler),
     ('/tasks/send_confirmation_email', SendConfirmationEmailHandler),
+    ('/tasks/get_featured_speaker', GetFeaturedSpeaker),
 ], debug=True)

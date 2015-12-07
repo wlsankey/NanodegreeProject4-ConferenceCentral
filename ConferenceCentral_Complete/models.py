@@ -27,6 +27,10 @@ class Profile(ndb.Model):
     mainEmail = ndb.StringProperty()
     teeShirtSize = ndb.StringProperty(default='NOT_SPECIFIED')
     conferenceKeysToAttend = ndb.StringProperty(repeated=True)
+    wishlist = ndb.StringProperty(repeated=True)
+
+class WISHLIST_RETURNED(messages.Message):
+    wishlist = messages.StringField(1, repeated=True)
 
 class ProfileMiniForm(messages.Message):
     """ProfileMiniForm -- update Profile form message"""
@@ -39,6 +43,7 @@ class ProfileForm(messages.Message):
     mainEmail = messages.StringField(2)
     teeShirtSize = messages.EnumField('TeeShirtSize', 3)
     conferenceKeysToAttend = messages.StringField(4, repeated=True)
+    wishlist = messages.StringField(5, repeated=True)
 
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
@@ -116,6 +121,9 @@ class ConferenceSessionQueryForm(messages.Message):
 class ConferenceSessionQueryForms(messages.Message):
     filters = messages.MessageField(ConferenceSessionQueryForm, 1, repeated=True)
 
+class FeaturedSpeakerForm(messages.Message):
+    speaker = messages.StringField(1)
+
 
 class Session(ndb.Model):
     """ Session -- Various workshops, lectures, etc. at conference """
@@ -134,7 +142,6 @@ class Session(ndb.Model):
     date = ndb.DateProperty()
     start_time =ndb.TimeProperty()
     websafeConferenceKey = ndb.StringProperty()
-    key = ndb.StringProperty()
 
 class SessionForm(messages.Message):
     name = messages.StringField(1)
@@ -149,6 +156,9 @@ class SessionForm(messages.Message):
 
 class SessionForms(messages.Message):
     """ SesssionForms -- multiple Session outbound form message"""
-    items = messages.MessageField(SessionForm,1,repeated=True) 
+    items = messages.MessageField(SessionForm,1,repeated=True)
+
+
+
 
 
