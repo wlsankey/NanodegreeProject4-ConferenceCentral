@@ -16,6 +16,7 @@ import webapp2
 from google.appengine.api import app_identity
 from google.appengine.api import mail
 from conference import ConferenceApi
+import logging
 
 import endpoints
 from protorpc import messages
@@ -24,7 +25,7 @@ from protorpc import remote
 
 from models import SessionForms
 from conference import CONF_GET_REQUEST
-from conference import getFeaturedSpeaker
+
 
 
 
@@ -51,18 +52,14 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
 
 class GetFeaturedSpeaker(webapp2.RequestHandler):
     def get(self):
-        ConferenceApi.getFeaturedSpeaker(
+        "Get featured speaker"
+        logging.warning("START main.py GetFeaturedSpeaker")
+        logging.warning(self.request.get('webSafeConferenceKey'))
+        ConferenceApi._cacheFeaturedSpeaker(
             self.request.get('webSafeConferenceKey')
             )
         
        
-
-
-
-
-
-
-
 app = webapp2.WSGIApplication([
     ('/crons/set_announcement', SetAnnouncementHandler),
     ('/tasks/send_confirmation_email', SendConfirmationEmailHandler),

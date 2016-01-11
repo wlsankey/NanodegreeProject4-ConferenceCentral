@@ -424,10 +424,12 @@ class ConferenceApi(remote.Service):
 
         if not request.name:
             raise endpoints.BadRequestException("Session 'name' field required")
-        # Make sure a websafeConferenceKey is provided (for testing)
 
+        # Make sure a websafeConferenceKey is provided (for testing)
         if not (request.websafeConferenceKey and request.speaker and request.typeOfsession):
             raise endpoints.BadRequestException("Session 'websafeConferenceKey', 'speaker', and 'typeOfsession' fields required")
+        logging.warning(request.websafeConferenceKey)
+        logging.warning("TEST START ABOVE")
 
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
         conf_creator_id = getattr(conf, 'organizerUserId')
@@ -461,7 +463,6 @@ class ConferenceApi(remote.Service):
 
 
         # Create a Session object and then store values from the request   
-
         session_object = Session(
             name="",
             highlights="",
@@ -482,10 +483,13 @@ class ConferenceApi(remote.Service):
         setattr(session_object, "speaker", data['speaker'])
         session_object.put()
 
+        # send task for featured speaker to taskqueue
         taskqueue.add(
             params={'websafeConferenceKey': request.websafeConferenceKey},
-            url='/tasks/get_featured_speaker'
+            url='/tasks/get_featured_speaker',
+            method='GET'
             )
+
         return self._copySessionToForm(session_object)
 
 
@@ -605,39 +609,57 @@ class ConferenceApi(remote.Service):
             )
 
 
-    @endpoints.method(CONF_GET_REQUEST, FeaturedSpeakerForm,
-        path='getFeaturedSpeaker/{websafeConferenceKey}',
+    @endpoints.method(message_types.VoidMessage, FeaturedSpeakerForm,
+        path='getFeaturedSpeaker/',
         http_method='GET',
         name= 'getFeaturedSpeaker')
     def getFeaturedSpeaker(self, request):
         """" A query to return the featured speaker at a given Conference"""
 
-        # return ancestor (Conference) key
-        conference_key = ndb.Key(urlsafe=request.websafeConferenceKey)
-        # Check if there is a conference associated with conference key
-        conf = conference_key.get()
+        #retrieve featured speaker from memcache
+        featured_speaker = memcache.get(FEATURED_SPEAKER)
 
-        if not conf:
-            raise endpoints.NotFoundException(
-            'No conference found for the key provided: %s' % request.websafeConferenceKey
+        if not featured_speaker:
+            featured_speaker = "Not designated"
+
+        return FeaturedSpeakerForm(
+            speaker= featured_speaker
             )
 
-        # create an ancestor query for all sessions of a conference
-        sessions_query = Session.query(ancestor=conference_key)
-        sessions = sessions_query
+
+
+    @staticmethod
+    def _cacheFeaturedSpeaker(websafeConferenceKey):
+        """Create Featured Speaker & assign to memcache; used by
+        memcache cron job.
+        """
+        # returns the conference key
+        conference_key = ndb.Key(urlsafe=websafeConferenceKey)
+        conf = conference_key.get()
+
+        logging.warning("START _cacheFeaturedSpeaker")
+        logging.warning(conference_key)
+
+        # chek if there is a conference associted with conference key
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found for the key provided: %s' % request.websafeConferenceKey
+                )
+
+        # find all sessions of the given conference
+        sessions = Session.query(ancestor=conference_key)
+
+        #review all speakers in given collection of sessions and find most common speakers
         speakers = []
-        
         for sess in sessions:
             if getattr(sess,'speaker') != "":
                 speakers.append(getattr(sess,'speaker'))
         frequent_speaker = collections.Counter(speakers).most_common()
 
-        featured_speaker_form = FeaturedSpeakerForm(
-            speaker=frequent_speaker[0][0]
-            )
+        #save featured speaker in memcache
+        memcache.add(key=FEATURED_SPEAKER, value=str(frequent_speaker[0][0]))
 
-        return featured_speaker_form
-
+        return featured_speaker
 
 
 # - - - Wishlist objects - - - - - - - - - - - - - - - - - - -
@@ -688,28 +710,6 @@ class ConferenceApi(remote.Service):
         setattr(output, 'wishlist', output_wishlist)
 
         return output
-
-
-
-        
-
-
-
-
-
-
-        
-
-   
-
-
-
-
-
-
-
-
-
 
 
 
