@@ -54,9 +54,9 @@ class GetFeaturedSpeaker(webapp2.RequestHandler):
     def get(self):
         "Get featured speaker"
         logging.warning("START main.py GetFeaturedSpeaker")
-        logging.warning(self.request.get('webSafeConferenceKey'))
+        logging.warning(self.request.get('websafeConferenceKey'))
         ConferenceApi._cacheFeaturedSpeaker(
-            self.request.get('webSafeConferenceKey')
+            self.request.get('websafeConferenceKey')
             )
         
        

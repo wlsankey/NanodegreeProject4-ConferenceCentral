@@ -610,14 +610,15 @@ class ConferenceApi(remote.Service):
 
 
     @endpoints.method(message_types.VoidMessage, FeaturedSpeakerForm,
-        path='getFeaturedSpeaker/',
+        path='getFeaturedSpeaker',
         http_method='GET',
         name= 'getFeaturedSpeaker')
     def getFeaturedSpeaker(self, request):
         """" A query to return the featured speaker at a given Conference"""
 
         #retrieve featured speaker from memcache
-        featured_speaker = memcache.get(FEATURED_SPEAKER)
+        featured_speaker = memcache.get('FEATURED_SPEAKER')
+        logging.warning(featured_speaker)
 
         if not featured_speaker:
             featured_speaker = "Not designated"
@@ -657,9 +658,9 @@ class ConferenceApi(remote.Service):
         frequent_speaker = collections.Counter(speakers).most_common()
 
         #save featured speaker in memcache
-        memcache.add(key=FEATURED_SPEAKER, value=str(frequent_speaker[0][0]))
+        memcache.add(key='FEATURED_SPEAKER', value=str(frequent_speaker[0][0]))
 
-        return featured_speaker
+        return frequent_speaker
 
 
 # - - - Wishlist objects - - - - - - - - - - - - - - - - - - -
