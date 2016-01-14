@@ -677,8 +677,19 @@ class ConferenceApi(remote.Service):
         prof = self._getProfileFromUser() # get user Profile
         wishlist_keys = prof.wishlist
 
-        if request.session_key_to_add in wishlist_keys:
-            logging.warning("Session already stored. DO NOT STORE AGAIN")
+        #<<<PENDING COMPLETION-- need to figure out (1) no duplicate keys and (2) sessions keys actually work>>>
+        try:
+            if request.session_key_to_add in wishlist_keys:
+                logging.warning("Session already stored. DO NOT STORE AGAIN")
+                sessions_query = Session.query()
+                val = request.session_key_to_add
+                wish_session = ndb.Key(urlsafe=val).get()
+
+
+
+            except KeyError:
+                raise endpoints.BadRequestException("Filter contains invalid field or operator.")
+
             return self._copyProfileToForm(prof)
         else:
             logging.warning("STARTING ELSE STATEMENT")
@@ -689,6 +700,7 @@ class ConferenceApi(remote.Service):
             logging.warning(wishlist_keys)
             logging.warning(prof)
             return self._copyProfileToForm(prof)
+        #<<<END PENDING>>>
 
 
     @endpoints.method(message_types.VoidMessage, WISHLIST_RETURNED,
