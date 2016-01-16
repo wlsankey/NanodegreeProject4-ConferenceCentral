@@ -672,36 +672,22 @@ class ConferenceApi(remote.Service):
         )
     def addSessionToWishlist(self, request):
         """ Add favored sessions to a wishlist"""
-        logging.warning("addSessionToWishlist has STARTED")
-
         prof = self._getProfileFromUser() # get user Profile
         wishlist_keys = prof.wishlist
 
-        #<<<PENDING COMPLETION-- need to figure out (1) no duplicate keys and (2) sessions keys actually work>>>
+        # Validation of data - check to make sure no duplicates and that key works. Raises exceptions if key invalid.
+        if request.session_key_to_add in wishlist_keys:
+            raise endpoints.BadRequestException("This key is already stored in your wishlist.")
         try:
-            if request.session_key_to_add in wishlist_keys:
-                logging.warning("Session already stored. DO NOT STORE AGAIN")
-                sessions_query = Session.query()
-                val = request.session_key_to_add
-                wish_session = ndb.Key(urlsafe=val).get()
-
-
-
-            except KeyError:
-                raise endpoints.BadRequestException("Filter contains invalid field or operator.")
-
-            return self._copyProfileToForm(prof)
+            wish_session = ndb.Key(urlsafe=request.session_key_to_add).get()
+        except:
+            raise endpoints.BadRequestException("Please re-try. This key is not valid")
+        # If key validated then store session in wishlist
         else:
-            logging.warning("STARTING ELSE STATEMENT")
-            logging.warning(wishlist_keys)
             wishlist_keys.append(request.session_key_to_add)
             setattr(prof, 'wishlist', wishlist_keys)
             prof.put()
-            logging.warning(wishlist_keys)
-            logging.warning(prof)
             return self._copyProfileToForm(prof)
-        #<<<END PENDING>>>
-
 
     @endpoints.method(message_types.VoidMessage, WISHLIST_RETURNED,
         path= 'getSessionsInWishlist',
