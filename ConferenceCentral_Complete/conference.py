@@ -698,13 +698,14 @@ class ConferenceApi(remote.Service):
         """ Return a user's stored sessions on wishlist"""
         logging.warning("getSessionsInWishlist has STARTED")
 
+        # Gets user Profile with attribute for wishlist
         prof = self._getProfileFromUser() # get user Profile
         wishlist_keys = prof.wishlist
-        output_wishlist = [getattr(ndb.Key(urlsafe=val).get(), 'name') for val in wishlist_keys]
-        #ndb.Key(urlsafe=wsck) for wsck in prof.conferenceKeysToAttend]
 
-        logging.warning(output_wishlist)
+        # Readies list of session keys from wishlist by converting urlsafe to keys
+        output_wishlist = [str(ndb.Key(urlsafe=val).get()) for val in wishlist_keys]
 
+        # Use Resource Container for response
         output = WISHLIST_RETURNED()
         setattr(output, 'wishlist', output_wishlist)
 
