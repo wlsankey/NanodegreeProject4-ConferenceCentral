@@ -139,6 +139,12 @@ SESSION_GET_REQUESTS_bySPEAKERandTYPE = endpoints.ResourceContainer(
 
     )
 
+SESSION_GET_REQUESTS_byDURATIONandTYPE = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    typeOfsession=messages.StringField(1),
+    duration=messages.IntegerField(2),
+    )
+
 WISHLIST_POST_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
     #user_id=messages.StringField(1),
@@ -599,6 +605,27 @@ class ConferenceApi(remote.Service):
         sessions_query = Session.query()
         sessions_query_step2 = sessions_query.filter(Session.speaker == str(request.speaker))
         sessions_query_step3 = sessions_query_step2.filter(Session.typeOfsession == str(request.typeOfsession))
+
+        sessions = sessions_query_step3
+        for sess in sessions:
+           logging.warning(sess)
+
+        return SessionForms(
+            items=[self._copySessionToForm(sess) for sess in sessions] 
+            )
+
+
+    @endpoints.method(SESSION_GET_REQUESTS_byDURATIONandTYPE, SessionForms,
+        path='getSessionsByDurationType/{typeOfsession}',
+        http_method= 'GET',
+        name='getSessionsByDurationAndType'
+        )
+    def getSessionsByDurationAndType(self, request):
+        """ Return all sessions of a given type and particular duration"""
+
+        sessions_query = Session.query()
+        sessions_query_step2 = sessions_query.filter(Session.typeOfsession == str(request.typeOfsession))
+        sessions_query_step3 = sessions_query_step2.filter(Session.duration == request.duration)
 
         sessions = sessions_query_step3
         for sess in sessions:

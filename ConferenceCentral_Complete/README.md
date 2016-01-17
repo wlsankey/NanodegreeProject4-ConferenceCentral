@@ -48,7 +48,9 @@ The speaker attribute was designed simply as a attribute to Session and not it's
 
 getConferencesCreated() is a query that returns all the conferences created by a particular user. If someone was interested in attending all conferences created by a person. For example, a person in the admisions office at a university might create several conferences each year. A potential attendee might be interested in see all conferences created by that conference organizer. 
 
-A more specific query that follows is getConferencesCreatedByCity(). This query returns the conferences created by a particular conference organizer and filters them by a particular city. Following the example above, you might only be interested in univesity admissions conferences organized by a particular organizer that are in your hometown of Philadelphia. 
+Additional Query 1. A more specific query that follows is getConferencesCreatedByCity(). This query returns the conferences created by a particular conference organizer and filters them by a particular city. Following the example above, you might only be interested in univesity admissions conferences organized by a particular organizer that are in your hometown of Philadelphia. 
+
+Additional Query 2. Another query is the getSessionsByDurationAndType() search. This query filters all sessions by a particular type of session (lecture, workshop, seminar, etc.) and then filters for the duration. In a final buildout version of this query, the front-end would have a validated input field for the duration so that you can specifically select common duration options (e.g. half hour, hour, two hours, etc.)
 
 
 
