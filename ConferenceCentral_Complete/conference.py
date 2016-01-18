@@ -716,6 +716,29 @@ class ConferenceApi(remote.Service):
             prof.put()
             return self._copyProfileToForm(prof)
 
+
+    @endpoints.method(WISHLIST_POST_REQUEST, ProfileForm,
+        path = 'removeSessionToWishlist',
+        http_method = 'POST',
+        name = 'removeSessionToWishlist'
+        )
+    def removeSessionToWishlist(self, request):
+        """ Add favored sessions to a wishlist"""
+        prof = self._getProfileFromUser() # get user Profile
+        wishlist_keys = prof.wishlist
+
+        # Checks to see if session key is in wishlist and then removes it.
+        if request.session_key_to_add in wishlist_keys:
+            wishlist_keys.remove(request.session_key_to_add) #here request.session_key_to_add is really key to remove
+            setattr(prof, 'wishlist', wishlist_keys)
+            prof.put()
+            return self._copyProfileToForm(prof)
+        
+        # Raises exception if the key to remove is not stored already
+        else:
+            raise endpoints.NotFoundException("This key was not already in your wishlist")
+
+
     @endpoints.method(message_types.VoidMessage, WISHLIST_RETURNED,
         path= 'getSessionsInWishlist',
         http_method = 'GET',
