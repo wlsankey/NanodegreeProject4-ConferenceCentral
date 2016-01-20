@@ -52,12 +52,11 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
 
 class GetFeaturedSpeaker(webapp2.RequestHandler):
     def get(self):
-        "Get featured speaker"
-        logging.warning("START main.py GetFeaturedSpeaker")
-        logging.warning(self.request.get('websafeConferenceKey'))
+        """Get featured speaker"""
         ConferenceApi._cacheFeaturedSpeaker(
             self.request.get('websafeConferenceKey')
             )
+        self.response.set_status(204)
         
        
 app = webapp2.WSGIApplication([

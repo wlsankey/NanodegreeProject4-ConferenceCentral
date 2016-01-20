@@ -56,6 +56,7 @@ import collections
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 MEMCACHE_ANNOUNCEMENTS_KEY = "RECENT_ANNOUNCEMENTS"
+MEMCACHE_FEATURED_SPEAKER = "FEATURED_SPEAKER"
 ANNOUNCEMENT_TPL = ('Last chance to attend! The following conferences '
                     'are nearly sold out: %s')
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -434,8 +435,6 @@ class ConferenceApi(remote.Service):
         # Make sure a websafeConferenceKey is provided (for testing)
         if not (request.websafeConferenceKey and request.speaker and request.typeOfsession):
             raise endpoints.BadRequestException("Session 'websafeConferenceKey', 'speaker', and 'typeOfsession' fields required")
-        logging.warning(request.websafeConferenceKey)
-        logging.warning("TEST START ABOVE")
 
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
         conf_creator_id = getattr(conf, 'organizerUserId')
@@ -569,7 +568,7 @@ class ConferenceApi(remote.Service):
             'No conference found for the key provided: %s' % request.websafeConferenceKey
             )
         sessions_query = Session.query(ancestor=conference_key)
-        sessions_query_step2 = sessions_query.filter(Session.typeOfsession == str(request.typeOfsession))
+        sessions_query_step2 = sessions_query.filter(Session.typeOfsession == request.typeOfsession)
         sessions = sessions_query_step2
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions] 
@@ -585,6 +584,7 @@ class ConferenceApi(remote.Service):
     def getSessionsBySpeaker(self, request):
         """ Return all sessions with a given speaker"""
 
+        # PEP 008 style guide recommends line length less than 79 characters, hence the queries have be broken into components
         sessions_query = Session.query()
         sessions_query_step2 = sessions_query.filter(Session.speaker == request.speaker)
         sessions = sessions_query_step2
@@ -602,13 +602,12 @@ class ConferenceApi(remote.Service):
     def getSessionsBySpeakerAndType(self, request):
         """ Return all sessions with a given speaker"""
 
+        # PEP 008 style guide recommends line length less than 79 characters, hence the queries have be broken into components
         sessions_query = Session.query()
-        sessions_query_step2 = sessions_query.filter(Session.speaker == str(request.speaker))
-        sessions_query_step3 = sessions_query_step2.filter(Session.typeOfsession == str(request.typeOfsession))
-
+        sessions_query_step2 = sessions_query.filter(Session.speaker == request.speaker)
+        sessions_query_step3 = sessions_query_step2.filter(Session.typeOfsession == request.typeOfsession)
         sessions = sessions_query_step3
-        for sess in sessions:
-           logging.warning(sess)
+ 
 
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions] 
@@ -622,14 +621,12 @@ class ConferenceApi(remote.Service):
         )
     def getSessionsByDurationAndType(self, request):
         """ Return all sessions of a given type and particular duration"""
-
+        # PEP 008 style guide recommends line length less than 79 characters, hence the queries have be broken into components
         sessions_query = Session.query()
-        sessions_query_step2 = sessions_query.filter(Session.typeOfsession == str(request.typeOfsession))
+        sessions_query_step2 = sessions_query.filter(Session.typeOfsession == request.typeOfsession)
         sessions_query_step3 = sessions_query_step2.filter(Session.duration == request.duration)
 
         sessions = sessions_query_step3
-        for sess in sessions:
-           logging.warning(sess)
 
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions] 
@@ -644,8 +641,7 @@ class ConferenceApi(remote.Service):
         """" A query to return the featured speaker at a given Conference"""
 
         #retrieve featured speaker from memcache
-        featured_speaker = memcache.get('FEATURED_SPEAKER')
-        logging.warning(featured_speaker)
+        featured_speaker = memcache.get(MEMCACHE_FEATURED_SPEAKER)
 
         if not featured_speaker:
             featured_speaker = "Not designated"
@@ -665,9 +661,6 @@ class ConferenceApi(remote.Service):
         conference_key = ndb.Key(urlsafe=websafeConferenceKey)
         conf = conference_key.get()
 
-        logging.warning("START _cacheFeaturedSpeaker")
-        logging.warning(conference_key)
-
         # chek if there is a conference associted with conference key
         if not conf:
             raise endpoints.NotFoundException(
@@ -685,9 +678,8 @@ class ConferenceApi(remote.Service):
         frequent_speaker = collections.Counter(speakers).most_common()
 
         #save featured speaker in memcache
-        memcache.add(key='FEATURED_SPEAKER', value=str(frequent_speaker[0][0]))
+        memcache.set(key=MEMCACHE_FEATURED_SPEAKER, value=str(frequent_speaker[0][0]))
 
-        return frequent_speaker
 
 
 # - - - Wishlist objects - - - - - - - - - - - - - - - - - - -
@@ -746,7 +738,6 @@ class ConferenceApi(remote.Service):
         )
     def getSessionsInWishlist(self, request):
         """ Return a user's stored sessions on wishlist"""
-        logging.warning("getSessionsInWishlist has STARTED")
 
         # Gets user Profile with attribute for wishlist
         prof = self._getProfileFromUser() # get user Profile
