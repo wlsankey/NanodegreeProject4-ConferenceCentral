@@ -457,8 +457,14 @@ class ConferenceApi(remote.Service):
 
         # convert dates from strings to Date objects; set month based on start_date
         if data['start_time']:
-            logging.warning(datetime.strptime(data['start_time'], "%I:%M%p").time())
-            data['start_time'] = datetime.strptime(data['start_time'][:7], "%I:%M%p").time()
+            try:
+                logging.warning(datetime.strptime(data['start_time'], "%I:%M%p").time())
+                data['start_time'] = datetime.strptime(data['start_time'][:7], "%I:%M%p").time()
+            #except:
+            #     data['start_time'] = datetime.strptime(data['start_time'][:7], "%I:%M %p").time()
+            except:
+                raise endpoints.BadRequestException('Time input should be formatted as follows 8:30PM')
+
         else:
             data['start_time'] = 0
         
