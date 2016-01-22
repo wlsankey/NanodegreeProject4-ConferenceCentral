@@ -14,6 +14,8 @@ __author__ = 'wesc+api@google.com (Wesley Chun)'
 
 
 from datetime import datetime
+import time 
+from time import mktime
 import logging
 
 import endpoints
@@ -453,6 +455,14 @@ class ConferenceApi(remote.Service):
                 data[df] = DEFAULTS_SESSION[df]
                 setattr(request, df, DEFAULTS_SESSION[df])
 
+        # convert dates from strings to Date objects; set month based on start_date
+        if data['start_time']:
+            logging.warning(datetime.strptime(data['start_time'], "%I:%M%p").time())
+            data['start_time'] = datetime.strptime(data['start_time'][:7], "%I:%M%p").time()
+        else:
+            data['start_time'] = 0
+        
+
         conference_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         conference_object =ndb.Key(urlsafe=request.websafeConferenceKey).get()
 
@@ -505,7 +515,7 @@ class ConferenceApi(remote.Service):
             name=getattr(input_session_model, 'name'),
             duration=getattr(input_session_model, 'duration'),
             typeOfsession=getattr(input_session_model, 'typeOfsession'),
-            start_time=getattr(input_session_model, 'start_time'),
+            start_time=str(getattr(input_session_model, 'start_time')),
             highlights=getattr(input_session_model, 'highlights'),
             websafeConferenceKey=getattr(input_session_model, 'websafeConferenceKey'),
             key=str(getattr(input_session_model, 'key')),
