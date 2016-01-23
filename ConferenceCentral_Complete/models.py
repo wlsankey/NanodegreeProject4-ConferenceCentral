@@ -145,13 +145,14 @@ class Session(ndb.Model):
     websafeConferenceKey = ndb.StringProperty()
 
 class SessionForm(messages.Message):
+    """ Session outbound form message """
     name = messages.StringField(1)
     highlights = messages.StringField(2)
     speaker = messages.StringField(3)
     duration = messages.IntegerField(4)
     typeOfsession = messages.StringField(5)
     date = messages.StringField(6)
-    start_time = messages.StringField(7) #DateTimeField()
+    start_time = messages.StringField(7)
     websafeConferenceKey = messages.StringField(8)
     key = messages.StringField(9)
 

@@ -74,7 +74,7 @@ DEFAULTS_SESSION = {
     "highlights": "Interesting highlights for sure!!!",
     "speaker": "Undecided",
     "duration": 0,
-    "typeOfsession": "['workshop']"
+    "typeOfsession": "workshop",
 }
 
 OPERATORS = {
@@ -455,26 +455,31 @@ class ConferenceApi(remote.Service):
                 data[df] = DEFAULTS_SESSION[df]
                 setattr(request, df, DEFAULTS_SESSION[df])
 
-        # convert dates from strings to Date objects; set month based on start_date
+        # convert dates from strings to Time and Date objects
         if data['start_time']:
             try:
                 logging.warning(datetime.strptime(data['start_time'], "%I:%M%p").time())
                 data['start_time'] = datetime.strptime(data['start_time'][:7], "%I:%M%p").time()
-            #except:
-            #     data['start_time'] = datetime.strptime(data['start_time'][:7], "%I:%M %p").time()
             except:
                 raise endpoints.BadRequestException('Time input should be formatted as follows 8:30PM')
 
         else:
             data['start_time'] = 0
+
+
+        if data['date']:
+            try:
+                data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
+            except:
+                raise endpoints.BadRequestException('Date input should be formatted as follows YYYY-mm-dd or 2016-10-03')
+        else:
+            data['date'] = 0
+
         
 
         conference_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         conference_object =ndb.Key(urlsafe=request.websafeConferenceKey).get()
 
-        if not conference_key:
-            raise endpoints.NotFoundException(
-                'No conference found with key: %s' % request.websafeConferenceKey)
 
         new_session_id = Session.allocate_ids(size=1, parent=conference_key)[0]
         session_key = ndb.Key(Session, new_session_id, parent=conference_key)
@@ -483,26 +488,22 @@ class ConferenceApi(remote.Service):
         session_form_key = data['key']
 
 
-        # Create a Session object and then store values from the request   
+        # Create a Session object and then store values from the request
+
         session_object = Session(
-            name="",
-            highlights="",
-            speaker="",
-            duration=60,
-            typeOfsession="",
-            websafeConferenceKey="",
-            key=session_form_key
+            name=data['name'],
+            duration= data['duration'],
+            typeOfsession= data['typeOfsession'],
+            start_time= data['start_time'],
+            highlights= data['highlights'],
+            websafeConferenceKey= data['websafeConferenceKey'],
+            key= data['key'],
+            date= data['date'],
+            speaker= data['speaker']
             )
-        setattr(session_object,"name",data['name'])
-        setattr(session_object, "duration", data['duration'])
-        setattr(session_object, "typeOfsession", data['typeOfsession'])
-        setattr(session_object, "start_time", data['start_time'])
-        setattr(session_object, "highlights", data['highlights'])
-        setattr(session_object, "websafeConferenceKey", data['websafeConferenceKey'])
-        setattr(session_object, "key", data['key'])
-        setattr(session_object, "date", data['date'])
-        setattr(session_object, "speaker", data['speaker'])
+
         session_object.put()
+
 
         # send task for featured speaker to taskqueue
         taskqueue.add(
@@ -524,8 +525,8 @@ class ConferenceApi(remote.Service):
             start_time=str(getattr(input_session_model, 'start_time')),
             highlights=getattr(input_session_model, 'highlights'),
             websafeConferenceKey=getattr(input_session_model, 'websafeConferenceKey'),
-            key=str(getattr(input_session_model, 'key')),
-            date=getattr(input_session_model, 'date'),
+            key=str(input_session_model.key.urlsafe()),
+            date=str(getattr(input_session_model, 'date')),
             speaker=getattr(input_session_model, 'speaker')
             )
 
@@ -559,8 +560,8 @@ class ConferenceApi(remote.Service):
             )
         
         # create an ancestor query for all sessions of a conference
-        sessions_query = Session.query(ancestor=conference_key)
-        sessions = sessions_query
+        sessions = Session.query(ancestor=conference_key)
+
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions] 
             )
@@ -583,9 +584,9 @@ class ConferenceApi(remote.Service):
             raise endpoints.NotFoundException(
             'No conference found for the key provided: %s' % request.websafeConferenceKey
             )
-        sessions_query = Session.query(ancestor=conference_key)
-        sessions_query_step2 = sessions_query.filter(Session.typeOfsession == request.typeOfsession)
-        sessions = sessions_query_step2
+        ssessions = Session.query(ancestor=conference_key).\
+        filter(Session.typeOfsession == request.typeOfsession)
+  
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions] 
             )
@@ -600,10 +601,7 @@ class ConferenceApi(remote.Service):
     def getSessionsBySpeaker(self, request):
         """ Return all sessions with a given speaker"""
 
-        # PEP 008 style guide recommends line length less than 79 characters, hence the queries have be broken into components
-        sessions_query = Session.query()
-        sessions_query_step2 = sessions_query.filter(Session.speaker == request.speaker)
-        sessions = sessions_query_step2
+        sessions = Session.query().filter(Session.speaker == request.speaker)
 
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions] 
@@ -616,15 +614,11 @@ class ConferenceApi(remote.Service):
         name='getSessionsBySpeakerAndType'
         )
     def getSessionsBySpeakerAndType(self, request):
-        """ Return all sessions with a given speaker"""
-
-        # PEP 008 style guide recommends line length less than 79 characters, hence the queries have be broken into components
-        sessions_query = Session.query()
-        sessions_query_step2 = sessions_query.filter(Session.speaker == request.speaker)
-        sessions_query_step3 = sessions_query_step2.filter(Session.typeOfsession == request.typeOfsession)
-        sessions = sessions_query_step3
+        """ Return all sessions with a given speaker and type of session"""
+   
+        sessions = Session.query().filter(Session.speaker == request.speaker).\
+        filter(Session.typeOfsession == request.typeOfsession)
  
-
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions] 
             )
@@ -637,12 +631,10 @@ class ConferenceApi(remote.Service):
         )
     def getSessionsByDurationAndType(self, request):
         """ Return all sessions of a given type and particular duration"""
-        # PEP 008 style guide recommends line length less than 79 characters, hence the queries have be broken into components
-        sessions_query = Session.query()
-        sessions_query_step2 = sessions_query.filter(Session.typeOfsession == request.typeOfsession)
-        sessions_query_step3 = sessions_query_step2.filter(Session.duration == request.duration)
 
-        sessions = sessions_query_step3
+        sessions = Session.query().\
+        filter(Session.typeOfsession == request.typeOfsession).\
+        filter(Session.duration == request.duration)
 
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions] 
@@ -659,11 +651,8 @@ class ConferenceApi(remote.Service):
         #retrieve featured speaker from memcache
         featured_speaker = memcache.get(MEMCACHE_FEATURED_SPEAKER)
 
-        if not featured_speaker:
-            featured_speaker = "Not designated"
-
         return FeaturedSpeakerForm(
-            speaker= featured_speaker
+            speaker= featured_speaker or "Not designated"
             )
 
 
